@@ -16,6 +16,7 @@
 #define LOGO_HEIGHT 6
 #define FONT_WIDTH 6
 #define FONT_HEIGHT 1
+#define DEBUG 0
 
 void ssd1306_command(int i2c_fd,uint8_t cmd){
     uint8_t buffer[2];
@@ -108,7 +109,28 @@ void update_full(int i2c_fd, uint8_t* data){
     ssd1306_data(i2c_fd, data, S_WIDTH * S_PAGES);
 }
 
+void update_bitwise_vertical(int i2c_fd, const uint8_t* data, int bitwise_delay_in_microsec,
+                             int x, int y, int x_len, int y_len){
+    uint8_t* tmp = (uint8_t*)malloc(x_len * y_len);
+
+    // bitwise update from above
+    for(int _y = 0; _y < y_len; _y++){
+        for(int bit = 0; bit < 8; bit++){
+            int mask = (2<<bit) - 1;
+            // original data is masked from LSB
+            for(int _x = 0; _x < x_len; _x++){
+                tmp[x_len * _y + _x] = (data[x_len * _y + _x]) & mask;
+            }        
+            update_area(i2c_fd, tmp + x_len * _y, x, _y, x_len, 1);
+            usleep(bitwise_delay_in_microsec);
+        }
+    }
+
+    free(tmp);
+}
+
 int main(){
+    /* init hardware */
     int i2c_fd =open("/dev/i2c-1",O_RDWR);
     if(i2c_fd <0){
         printf("err opening device\n");
@@ -122,8 +144,7 @@ int main(){
     
     ssd1306_Init(i2c_fd);
 
-
-    // update full
+    /* initialize with black background */
     uint8_t* data = (uint8_t*) malloc (S_WIDTH * S_PAGES);
 
     for(int x = 0; x < S_WIDTH; x++){
@@ -135,22 +156,39 @@ int main(){
     update_full(i2c_fd, data);
     printf("update full completed\n");
 
-    // update part
+    /* update logo */
+    
+    // prepare dataset
     uint8_t* data_s = (uint8_t*)malloc((LOGO_WIDTH) * LOGO_HEIGHT);
     for(int y = 0; y < LOGO_HEIGHT; y++){
         for(int x = 0; x < LOGO_WIDTH; x++){
             data_s[(LOGO_WIDTH) * y + (x)] = logo[LOGO_WIDTH * y + x];
-            printf("%d ", data_s[(LOGO_WIDTH) * y + x]);
         }
-        printf("\n");
     }
     
     printf("data prepared\n");
-    update_area(i2c_fd, data_s, 36, 8, LOGO_WIDTH, LOGO_HEIGHT);
+    
+    if(DEBUG){
+        printf("printing data to display...\n");
+        for(int i = 0; i < LOGO_HEIGHT; i++){
+            for(int j = 0; j < LOGO_WIDTH; j++){
+                printf("%d ", data_s[LOGO_WIDTH * i + j]);
+            }
+            printf("\n");
+        }
+    }
 
+    // bitwise update
+    int delay_us = (int)(0.05 * (1000 * 1000));
+    update_bitwise_vertical(i2c_fd, data_s, delay_us, 36, 0, LOGO_WIDTH, LOGO_HEIGHT);
+
+
+    /* write team name */
     // write string
+    sleep(1);
     write_str(i2c_fd, "The Butlers.", 28, S_PAGES - 1);
 
+    /* wrap up */
     free(data);
     free(data_s);
     close(i2c_fd);

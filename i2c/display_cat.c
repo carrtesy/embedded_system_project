@@ -112,7 +112,8 @@ void ssd1306_Init(int i2c_fd){
     ssd1306_command(i2c_fd,0xC0);//Set COM Output Scan Direction //0xC8 for horizontal inversion
     ssd1306_command(i2c_fd,0xDA);//Set COM Pins hardware configuration
     ssd1306_command(i2c_fd,0x12);//Manual says 0x2, but 0x12 is required
-    ssd1306_command(i2c_fd,0x81);//Set Contrast Controlssd1306_command(i2c_fd,0x7F);//0:min, 0xFF:max
+    ssd1306_command(i2c_fd,0x81);//Set Contrast Control
+    ssd1306_command(i2c_fd,0x7F);//0:min, 0xFF:max
     ssd1306_command(i2c_fd,0xA4);//Disable Entire Display On
     ssd1306_command(i2c_fd,0xA6);//Set Normal Display
     ssd1306_command(i2c_fd,0xD5);//Set OscFrequency
