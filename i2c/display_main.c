@@ -29,7 +29,7 @@
 #define LOGO_HEIGHT 6
 
 /* font */
-#define FONT_WIDTH 6
+#define FONT_WIDTH 5
 #define FONT_HEIGHT 1
 
 /* others */
@@ -181,29 +181,45 @@ void ssd1306_Init(int i2c_fd){
 
 int i2c_fd;
 uint8_t *data_s;
+int with_robot;
 
-void handler(int sig){
+void cat_walking(int sig){
     static int i = 0;
     const unsigned char * cats[4] = {cat1, cat2, cat3, cat4};
 
     // fixed frame rate
-    data_s = (uint8_t*)malloc((CAT_WIDTH + CAT_MOVE) * CAT_HEIGHT);
+    int ROBOT = with_robot? 10: 0;
+    data_s = (uint8_t*)malloc((CAT_WIDTH + CAT_MOVE + ROBOT) * CAT_HEIGHT);
     
     // update data
     for(int y = 0; y < CAT_HEIGHT; y++){
         for(int x = 0; x < CAT_MOVE; x++){
-            data_s[(CAT_WIDTH + CAT_MOVE) * y + x] = 0x0;
+            data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * y + x] = 0x0;
         }
 
         // frame by frame update
         for(int x = 0; x < CAT_WIDTH; x++){
-            data_s[(CAT_WIDTH + CAT_MOVE) * y + (x + CAT_MOVE)] = 
+            data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * y + (x + CAT_MOVE)] = 
                                 cats[(i/CAT_MOVE)%4][CAT_WIDTH * y + x];
+        }
+
+        for(int x = 0; x < ROBOT; x++){
+            data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * y + (x + CAT_WIDTH + CAT_MOVE)] = 0x0;
         }
     }
 
+    
+    // display robot
+    if(with_robot){
+        data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * (CAT_HEIGHT-1) + (CAT_WIDTH + ROBOT + CAT_MOVE - 1)] = 0x03;
+        data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * (CAT_HEIGHT-1) + (CAT_WIDTH + ROBOT + CAT_MOVE - 2)] = 0x0B;
+        data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * (CAT_HEIGHT-1) + (CAT_WIDTH + ROBOT + CAT_MOVE - 3)] = 0x1F;
+        data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * (CAT_HEIGHT-1) + (CAT_WIDTH + ROBOT + CAT_MOVE - 4)] = 0x0B;
+        data_s[(CAT_WIDTH + CAT_MOVE + ROBOT) * (CAT_HEIGHT-1) + (CAT_WIDTH + ROBOT + CAT_MOVE - 5)] = 0x03;
+    }
+
     // update data to display
-    update_area_x_wrap(i2c_fd, data_s, i, CAT_Y_LOC, CAT_WIDTH + CAT_MOVE, CAT_HEIGHT);
+    update_area_x_wrap(i2c_fd, data_s, i, CAT_Y_LOC, CAT_WIDTH + CAT_MOVE + ROBOT, CAT_HEIGHT);
     free(data_s);
     
     i+=CAT_MOVE;
@@ -234,9 +250,34 @@ int main(){
     printf("Background Initialized with zeros\n");
     
     /* Loading: cat walking */
-    signal(SIGALRM, handler);
-    ualarm(200000, 200000); // SIGALRM generated every 0.2sec, with interval of 0.2sec
-    int TIME_REMAIN = 10 * 1000000 / 200000; // x seconds to finish loading
+    int interval = 200000;
+    with_robot = 0;
+    signal(SIGALRM, cat_walking);
+    ualarm(interval, interval); // SIGALRM generated with interval
+    int TIME_REMAIN = 10 * 1000000 / interval; // x seconds to finish loading
+    
+    // write string
+    write_str(i2c_fd, " LOADING... ", 34, S_PAGES - 1);
+    
+    while(TIME_REMAIN--){
+        sleep(1);
+    }
+    ualarm(0, 0); // disable signal
+    
+    /* message */
+    // black background again 
+    sleep(1);
+    update_full(i2c_fd, data);
+    write_str(i2c_fd, "ENJOY!", 49, S_PAGES/2);
+
+    /* Loading: cat running */
+    sleep(1);
+    update_full(i2c_fd, data);
+    interval = 50000;
+    with_robot = 1;
+    signal(SIGALRM, cat_walking);
+    ualarm(interval, interval); // SIGALRM generated with interval
+    TIME_REMAIN = 10 * 1000000 / interval; // x seconds to finish loading
     
     while(TIME_REMAIN--){
         sleep(1);
@@ -275,7 +316,7 @@ int main(){
     /* write team name */
     // write string
     sleep(1);
-    write_str(i2c_fd, "The Butlers.", 28, S_PAGES - 1);
+    write_str(i2c_fd, "The Butlers.", 34, S_PAGES - 1);
 
     /* wrap up */
     free(data);

@@ -8,7 +8,9 @@
 #include <linux/i2c-dev.h>
 #include <signal.h>
 #include "skku.h"
-#include "cat.h"
+//#include "cat.h"
+#include "cat_pics.h" 
+#include "fonts/font.h"
 #define SSD1306_I2C_DEV   0x3C
 #define S_WIDTH 128
 #define S_HEIGHT 64
@@ -18,6 +20,13 @@
 #define LOGO_MOVE 4
 #define NUM_FRAMES (S_WIDTH/LOGO_MOVE)
 #define LOGO_Y_LOC 1
+#define CAT_PIC_WIDTH 87
+#define CAT_PIC_HEIGHT 6
+#define CAT_PIC_MOVE 8
+#define CAT_PIC_Y_LOC 1
+#define FONT_WIDTH 6
+#define FONT_HEIGHT 1
+
 
 void ssd1306_command(int i2c_fd,uint8_t cmd){
     uint8_t buffer[2];
@@ -150,6 +159,49 @@ void handler(int sig){
     if(i >= S_WIDTH) i = 0;
 }
 
+void write_char(int i2c_fd, char c, int x, int y){
+    if(c < ' '){
+        c = ' ';
+    }
+
+    update_area(i2c_fd, font[c - ' '], x, y, FONT_WIDTH, FONT_HEIGHT);
+}
+
+void write_str(int i2c_fd, char* str, int x, int y){
+    char c;
+    while(c = *str++){
+        write_char(i2c_fd, c, x, y);
+        x += FONT_WIDTH;
+    }
+}
+
+void handler2(int sig){
+    static int i = 0;
+    const unsigned char * cats[12] = {cat1, cat2, cat3, cat4, cat5, cat6, cat7, cat8, cat9, cat10, cat11, cat12};
+
+    // fixed frame rate
+    data_s = (uint8_t*)malloc((CAT_PIC_WIDTH + CAT_PIC_MOVE) * CAT_PIC_HEIGHT);
+    memset(data_s, 0, (CAT_PIC_WIDTH+CAT_PIC_MOVE) * CAT_PIC_HEIGHT);
+    
+    for(int y = 0; y < CAT_PIC_HEIGHT; y++){
+        for(int x = 0; x < CAT_PIC_MOVE; x++){
+            data_s[(CAT_PIC_WIDTH + CAT_PIC_MOVE) * y + x] = 0x0;
+        }
+
+        for(int x = 0; x < CAT_PIC_WIDTH; x++){
+            data_s[(CAT_PIC_WIDTH + CAT_PIC_MOVE) * y + (x + CAT_PIC_MOVE)] = cats[(i/CAT_PIC_MOVE)%12][CAT_PIC_WIDTH * y + x];
+        }
+    }
+
+    char * strs[12] = {"1 ", "2 " , "3 ", "4 ", "5 " , "6 " , "7 ", "8 ", "9 ", "10", "11", "12"};
+    write_str(i2c_fd, strs[(i/CAT_PIC_MOVE)%12], 10, S_PAGES - 1);        
+    update_area_x_wrap(i2c_fd, data_s, i, CAT_PIC_Y_LOC, CAT_PIC_WIDTH + CAT_PIC_MOVE, CAT_PIC_HEIGHT);
+    free(data_s);
+    
+    i+=CAT_PIC_MOVE;
+    if(i >= S_WIDTH) i = 0;
+}
+
 int main(){
     //int i2c_fd =open("/dev/i2c-1",O_RDWR);
     
@@ -181,8 +233,8 @@ int main(){
     update_full(i2c_fd, data);
     
 
-    signal(SIGALRM, handler);
-    ualarm(200000, 200000);
+    signal(SIGALRM, handler2);
+    ualarm(700000, 700000);
 
     while(1){
         sleep(1);
