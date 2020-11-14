@@ -69,4 +69,7 @@ smartCar = Car(leftWheelForward, leftWheelBackward, rightWheelForward, rightWhee
 smartCar.forward(0.25)
 smartCar.backward(0.25)
 smartCar.clockwise(0.25)
-smartCar.counterClockwise(1)
+smartCar.counterClockwise(0.5)
+
+
+GPIO.cleanup()
