@@ -1,0 +1,21 @@
+<html>
+	<head>
+		<title>Flask Test -Main </title>
+		<link href="{{ url_for('static',filename='style.css') }}"rel="stylesheet">
+	</head>
+	<body>
+		<div id= "title">Hello </div>
+		<div id="contents"> 
+			<form action="{{ url_for('led_set')  }}" method="POST">
+				{% for led_idx in range(4)  %}    
+					<select name="led_{{led_idx}}">
+						{% for led in ['r','g','b','o']  %}
+							<option value="{{led}}"> {{led}} </option>
+						{% endfor %}    
+					</select>
+				{% endfor %}    
+				<button type="submit">Set LED</button>
+			</form>
+		</div>
+	</body>
+</html>
