@@ -260,6 +260,7 @@ int main(){
     write_str(i2c_fd, " LOADING... ", 34, S_PAGES - 1);
     
     while(TIME_REMAIN--){
+        printf("time_remain: %d\n", TIME_REMAIN);
         sleep(1);
     }
     ualarm(0, 0); // disable signal
@@ -279,7 +280,10 @@ int main(){
     ualarm(interval, interval); // SIGALRM generated with interval
     TIME_REMAIN = 10 * 1000000 / interval; // x seconds to finish loading
     
+
+    printf("time_remain: %d\n", TIME_REMAIN);
     while(TIME_REMAIN--){
+        printf("time_remain: %d\n", TIME_REMAIN);
         sleep(1);
     }
     ualarm(0, 0); // disable signal
