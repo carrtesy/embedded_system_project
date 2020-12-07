@@ -61,7 +61,14 @@ At boot/config.txt
 dtparam=i2c_arm=on,i2c_arm_baudrate=200000
 ```
 
+3. Crontabs for scheduled jobs
+```
+$ sudo crontab -e
 
+@reboot sudo sh /home/pi/launcher.sh > /home/pi/logs/cronlog 2>&1
+*/1 * * * * /home/pi/modules/sensors/climate
+
+```
 
 
 ## Progress

@@ -65,7 +65,16 @@ void am2320_read_4b(int i2c_fd, uint8_t addr){
     uint16_t hum = buffer[2] << 8 | buffer[3];
     uint16_t temp = buffer[4] << 8 | buffer[5];
 
+
+    // step 4: store data in file
+
+    FILE * humidity_output = fopen("/home/pi/climate/humidity", "w");
+    FILE * temperature_output = fopen("/home/pi/climate/temperature", "w");
+    
+    fprintf(humidity_output, "%d.%01d", hum/10, hum%10);
+    fprintf(temperature_output, "%d.%01d", temp/10, temp%10);
     printf("Humidity %d.%01d%%, Temperature %d.%01dc \n" , hum/10, hum%10, temp/10, temp%10);
     
-
+    fclose(humidity_output);
+    fclose(temperature_output);
 }
