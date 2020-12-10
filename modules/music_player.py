@@ -15,7 +15,7 @@ class MusicPlayer:
         song_loc = "./assets/" + song
 
         self.process = subprocess.Popen(
-                args = ["omxplayer", song_loc], 
+                args = ["omxplayer", "--vol", "-3000", song_loc], 
                 preexec_fn = os.setsid,
                 )
        

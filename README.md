@@ -73,6 +73,9 @@ $ sudo crontab -e
 
 ## Progress
 
+### 2020-12-10: dancing with music
+- [dance](./modules/dance.py)
+
 ### 2020-11-15: motor control
 - Our first drive: [code for motor](./modules/motor.py)  
   
